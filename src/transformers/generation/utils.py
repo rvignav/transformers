@@ -2972,7 +2972,8 @@ class GenerationMixin:
 
             # finished sentences should have their next token be a padding token
             if has_eos_stopping_criteria:
-                next_tokens = next_tokens * unfinished_sequences + pad_token_id * (1 - unfinished_sequences)
+                # print(next_tokens.device, unfinished_sequences.device, pad_token_id.device)
+                next_tokens = next_tokens.to('cuda:0') * unfinished_sequences + pad_token_id * (1 - unfinished_sequences)
 
             # update generated ids, model inputs, and length for next step
             input_ids = torch.cat([input_ids, next_tokens[:, None]], dim=-1)
