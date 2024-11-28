@@ -249,7 +249,7 @@ class T5LayerNorm(nn.Module):
         if self.weight.dtype in [torch.float16, torch.bfloat16]:
             hidden_states = hidden_states.to(self.weight.dtype)
 
-        return self.weight * hidden_states
+        return self.weight * hidden_states.to(self.weight.device)
 
 
 try:
@@ -509,6 +509,7 @@ class T5Attention(nn.Module):
             return hidden_states
 
         # get query states
+
         query_states = shape(self.q(hidden_states))  # (batch_size, n_heads, seq_length, dim_per_head)
 
         # get key/value states
@@ -524,32 +525,32 @@ class T5Attention(nn.Module):
             query_states, key_states.transpose(3, 2)
         )  # equivalent of torch.einsum("bnqd,bnkd->bnqk", query_states, key_states), compatible with onnx op>9
 
-        if position_bias is None:
-            if not self.has_relative_attention_bias:
-                position_bias = torch.zeros(
-                    (1, self.n_heads, real_seq_length, key_length), device=scores.device, dtype=scores.dtype
-                )
-                if self.gradient_checkpointing and self.training:
-                    position_bias.requires_grad = True
-            else:
-                position_bias = self.compute_bias(real_seq_length, key_length, device=scores.device)
+        # if position_bias is None:
+        #     if not self.has_relative_attention_bias:
+        #         position_bias = torch.zeros(
+        #             (1, self.n_heads, real_seq_length, key_length), device=scores.device, dtype=scores.dtype
+        #         )
+        #         if self.gradient_checkpointing and self.training:
+        #             position_bias.requires_grad = True
+        #     else:
+        #         position_bias = self.compute_bias(real_seq_length, key_length, device=scores.device)
 
-            # if key and values are already calculated
-            # we want only the last query position bias
-            if past_key_value is not None:
-                position_bias = position_bias[:, :, -hidden_states.size(1) :, :]
+        #     # if key and values are already calculated
+        #     # we want only the last query position bias
+        #     if past_key_value is not None:
+        #         position_bias = position_bias[:, :, -hidden_states.size(1) :, :]
 
-            if mask is not None:
-                position_bias = position_bias + mask  # (batch_size, n_heads, seq_length, key_length)
+        #     if mask is not None:
+        #         position_bias = position_bias + mask  # (batch_size, n_heads, seq_length, key_length)
 
-        if self.pruned_heads:
-            mask = torch.ones(position_bias.shape[1])
-            mask[list(self.pruned_heads)] = 0
-            position_bias_masked = position_bias[:, mask.bool()]
-        else:
-            position_bias_masked = position_bias
+        # if self.pruned_heads:
+        #     mask = torch.ones(position_bias.shape[1])
+        #     mask[list(self.pruned_heads)] = 0
+        #     position_bias_masked = position_bias[:, mask.bool()]
+        # else:
+        #     position_bias_masked = position_bias
 
-        scores += position_bias_masked
+        # scores += position_bias_masked
         attn_weights = nn.functional.softmax(scores.float(), dim=-1).type_as(
             scores
         )  # (batch_size, n_heads, seq_length, key_length)
@@ -715,8 +716,9 @@ class T5Block(nn.Module):
 
             cross_attention_outputs = self.layer[1](
                 hidden_states,
-                key_value_states=encoder_hidden_states,
-                attention_mask=encoder_attention_mask,
+                # WHEN IS THE RIGHT TIME TO COMMUNICATE ENCODER STATES FOR CROSS-ATTENTION?
+                key_value_states=encoder_hidden_states, #.to('cuda:1'), # VIGNAV
+                attention_mask=encoder_attention_mask, #.to('cuda:1'), # VIGNAV
                 position_bias=encoder_decoder_position_bias,
                 layer_head_mask=cross_attn_layer_head_mask,
                 past_key_value=cross_attn_past_key_value,
