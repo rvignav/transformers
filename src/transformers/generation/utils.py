@@ -2936,6 +2936,10 @@ class GenerationMixin:
 
             # Clone is needed to avoid keeping a hanging ref to outputs.logits which may be very large for first iteration
             # (the clone itself is always small)
+
+            print("Here!")
+            return
+
             next_token_logits = outputs.logits[:, -1, :].clone()
 
             # pre-process distribution
@@ -2973,7 +2977,7 @@ class GenerationMixin:
             # finished sentences should have their next token be a padding token
             if has_eos_stopping_criteria:
                 # print(next_tokens.device, unfinished_sequences.device, pad_token_id.device)
-                next_tokens = next_tokens.to('cuda:0') * unfinished_sequences + pad_token_id * (1 - unfinished_sequences)
+                next_tokens = next_tokens.to('cuda:0') * unfinished_sequences + pad_token_id * (1 - unfinished_sequences) # 
 
             # update generated ids, model inputs, and length for next step
             input_ids = torch.cat([input_ids, next_tokens[:, None]], dim=-1)
