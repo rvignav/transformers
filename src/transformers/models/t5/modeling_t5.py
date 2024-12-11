@@ -718,8 +718,8 @@ class T5Block(nn.Module):
             cross_attention_outputs = self.layer[1](
                 hidden_states,
                 # WHEN IS THE RIGHT TIME TO COMMUNICATE ENCODER STATES FOR CROSS-ATTENTION?
-                key_value_states=encoder_hidden_states.to('cuda:1'), # VIGNAV
-                attention_mask=encoder_attention_mask.to('cuda:1'), # VIGNAV
+                key_value_states=encoder_hidden_states, # VIGNAV
+                attention_mask=encoder_attention_mask, # VIGNAV
                 position_bias=encoder_decoder_position_bias,
                 layer_head_mask=cross_attn_layer_head_mask,
                 past_key_value=cross_attn_past_key_value,
