@@ -2937,7 +2937,7 @@ class GenerationMixin:
             # Clone is needed to avoid keeping a hanging ref to outputs.logits which may be very large for first iteration
             # (the clone itself is always small)
 
-            print("Here!")
+            # VIGNAV early return for last output
             return
 
             next_token_logits = outputs.logits[:, -1, :].clone()
