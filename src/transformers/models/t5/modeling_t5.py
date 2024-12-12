@@ -590,7 +590,6 @@ class T5LayerSelfAttention(nn.Module):
         use_cache=False,
         output_attentions=False,
     ):
-        # print("IN HERE")
         normed_hidden_states = self.layer_norm(hidden_states)
         attention_output = self.SelfAttention(
             normed_hidden_states,
@@ -717,9 +716,8 @@ class T5Block(nn.Module):
 
             cross_attention_outputs = self.layer[1](
                 hidden_states,
-                # WHEN IS THE RIGHT TIME TO COMMUNICATE ENCODER STATES FOR CROSS-ATTENTION?
-                key_value_states=encoder_hidden_states, # VIGNAV
-                attention_mask=encoder_attention_mask, # VIGNAV
+                key_value_states=encoder_hidden_states,
+                attention_mask=encoder_attention_mask,
                 position_bias=encoder_decoder_position_bias,
                 layer_head_mask=cross_attn_layer_head_mask,
                 past_key_value=cross_attn_past_key_value,
